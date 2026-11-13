@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#C9361F">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="吃哪家">
+<title>今晚吃哪家</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=ZCOOL+QingKe+HuangYou&display=swap" rel="stylesheet">
+<style>
+/* 布局思路：手机单列；结果是一张取号小票，全页唯一的重点。 */
+:root{
+  --bg:#EEF1EC; --surface:#FBFCFA; --ink:#15251F; --muted:#5F6F68; --line:#CCD4CE;
+  --accent:#C9361F; --on-accent:#FFF8F5; --soft:#E1E7E1; --good:#1F7A52;
+  --display:"ZCOOL QingKe HuangYou","PingFang SC","Microsoft YaHei",sans-serif;
+  --body:system-ui,-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#101614; --surface:#1A2320; --ink:#E8EDE7; --muted:#97A69F; --line:#33403B;
+    --accent:#F26A52; --on-accent:#1B0B07; --soft:#232E2A; --good:#5CC597; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#101614; --surface:#1A2320; --ink:#E8EDE7; --muted:#97A69F; --line:#33403B;
+  --accent:#F26A52; --on-accent:#1B0B07; --soft:#232E2A; --good:#5CC597; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.55;-webkit-text-size-adjust:100%}
+#app{height:100%;display:flex;flex-direction:column;max-width:560px;margin:0 auto}
+main{flex:1;overflow-y:auto;padding:calc(20px + env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 28px max(16px,env(safe-area-inset-left));display:flex;flex-direction:column;gap:18px}
+nav{display:flex;border-top:1px solid var(--line);background:var(--surface);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;padding:14px 4px;background:none;border:0;color:var(--muted);font:inherit;font-size:15px;border-top:3px solid transparent;margin-top:-1px;cursor:pointer}
+nav button[aria-current="page"]{color:var(--ink);border-top-color:var(--accent);font-weight:600}
+h1{font-family:var(--display);font-weight:400;font-size:34px;line-height:1.15;margin:0;letter-spacing:.02em;text-wrap:balance}
+h2{font-size:15px;font-weight:600;margin:0;color:var(--muted)}
+p{margin:0}
+.sub{color:var(--muted);font-size:14px}
+.head{display:flex;flex-direction:column;gap:2px}
+.group{display:flex;flex-direction:column;gap:8px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:9px 15px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--ink);font:inherit;font-size:15px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip:disabled{opacity:.4;cursor:default}
+.btn{padding:14px 18px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:16px;font-weight:600;cursor:pointer;text-align:center}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-size:18px;padding:16px 18px}
+.btn.small{padding:8px 12px;font-size:14px;font-weight:500}
+.btn.danger{color:var(--accent)}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row > .btn{flex:1}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.ticket{background:var(--surface);border:1px solid var(--line);border-radius:14px;position:relative;overflow:hidden}
+.ticket .top{padding:18px 20px 20px;display:flex;flex-direction:column;gap:10px}
+.ticket .bottom{padding:16px 20px 18px;border-top:2px dashed var(--line);display:flex;flex-direction:column;gap:8px;position:relative}
+.ticket .bottom::before,.ticket .bottom::after{content:"";position:absolute;top:-11px;width:20px;height:20px;border-radius:50%;background:var(--bg);border:1px solid var(--line)}
+.ticket .bottom::before{left:-11px}.ticket .bottom::after{right:-11px}
+.ticket .name{font-family:var(--display);font-size:44px;line-height:1.1;letter-spacing:.02em;overflow-wrap:anywhere}
+.stamp{align-self:flex-start;font-size:13px;font-weight:600;padding:3px 10px;border-radius:4px;border:1.5px solid var(--accent);color:var(--accent);letter-spacing:.08em}
+.stamp.calm{border-color:var(--muted);color:var(--muted)}
+.facts{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:15px;font-variant-numeric:tabular-nums}
+.facts b{font-weight:600}
+.kv{display:flex;gap:10px;font-size:15px}
+.kv span:first-child{color:var(--muted);flex:none;width:3em}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.list{display:flex;flex-direction:column;gap:8px}
+.item{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;gap:10px;align-items:center;text-align:left;font:inherit;color:inherit;width:100%;cursor:pointer}
+.item .grow{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.item .t{font-weight:600;overflow-wrap:anywhere}
+.item .m{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+div.item{cursor:default;flex-wrap:wrap}
+.pill{font-size:12px;padding:2px 8px;border-radius:999px;background:var(--soft);color:var(--muted);flex:none}
+.pill.wish{background:none;border:1px solid var(--accent);color:var(--accent)}
+.stars{display:flex;gap:4px}
+.stars button{width:34px;height:34px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:14px;cursor:pointer;font-variant-numeric:tabular-nums}
+.stars button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+form{display:flex;flex-direction:column;gap:14px}
+label{display:flex;flex-direction:column;gap:5px;font-size:14px;color:var(--muted)}
+input,select,textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px;width:100%}
+textarea{min-height:110px;font-size:13px;font-family:ui-monospace,Menlo,Consolas,monospace}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.check{flex-direction:row;align-items:center;gap:8px;color:var(--ink);font-size:15px}
+.check input{width:20px;height:20px;flex:none}
+.days{display:flex;flex-wrap:wrap;gap:6px}
+.note{font-size:14px;color:var(--muted)}
+.ok{color:var(--good)}
+.err{color:var(--accent)}
+@media (max-width:360px){.ticket .name{font-size:36px}h1{font-size:30px}}
+@media (prefers-reduced-motion:no-preference){.ticket{animation:drop .28s ease-out}@keyframes drop{from{transform:translateY(-8px)}to{transform:none}}}
+</style>
+</head>
+<body>
+<div id="app">
+  <main id="main"></main>
+  <nav id="nav" aria-label="页面"></nav>
+</div>
+<script>
+/* ===== 可调参数：都集中在这里 ===== */
+const CFG = {
+  dayStartHour: 4,        // 凌晨 4 点前算前一晚
+  maxSwaps: 3,            // 每晚最多换几次
+  minOpenLeft: 45,        // 到店后至少还能吃多少分钟
+  tiredMins: 15,          // 很累时路上最多多少分钟
+  weekendMins: 60,        // 周五、周末路上最多多少分钟
+  histWeight: 0.3,        // 历史评分在喜好分里的占比
+  nopeStep: 0.04, nopeMax: 0.2,   // 近 30 天每次"就是不想吃"的降权和上限
+  catCoolDays: 2, catCool: 0.55,  // 同类型冷却
+  tasteMatch: 1.3, tasteClash: 0.6,
+  coldHot: 1.25, hotCool: 1.2,
+  rainOnFoot: 0.6, rainFootMins: 10,
+  noQueueTired: 1.2, queueABitTired: 0.85,
+  heavyStreakLight: 1.4,
+  topN: 5,
+  wishChance: 0.25, wishPerWeek: 2
+};
+const MODES = {walk:'步行', bike:'骑车', transit:'公交地铁', car:'开车打车'};
+const TASTES = {light:'清淡', mid:'适中', heavy:'重口'};
+const TEMPS = {none:'普通', hot:'热食', cool:'清爽'};
+const WD = ['周日','周一','周二','周三','周四','周五','周六'];
+const REASONS = {far:'太远', pricey:'太贵', cat:'刚吃过这类', oily:'太油腻', queue:'不想排队', nope:'就是不想吃'};
+const LS = 'dinner-picker-v1';
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const p2 = n => String(n).padStart(2,'0');
+const fmt = t => t.getFullYear()+'-'+p2(t.getMonth()+1)+'-'+p2(t.getDate());
+const eveDate = () => fmt(new Date(Date.now() - CFG.dayStartHour*3600e3));
+const noon = d => new Date(d+'T12:00:00');
+const dayDiff = (a,b) => Math.round((noon(b)-noon(a))/864e5);
+const weekday = d => noon(d).getDay();
+const hm = s => { const m=/^(\d{1,2}):(\d{2})$/.exec(s||''); return m ? (+m[1])*60+(+m[2]) : null; };
+const uid = () => Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const nowMin = () => (Date.now() - new Date(eveDate()+'T00:00:00').getTime())/60000;
+function mondayOf(d){ const t=noon(d); t.setDate(t.getDate()-((t.getDay()+6)%7)); return fmt(t); }
+
+function blank(){ return {v:1, shops:[], meals:[], rejects:[], wishLog:[], session:null,
+  settings:{baseMins:30, origins:['公司','家']}, updatedAt:0}; }
+function normalize(d){ const b=blank(); if(!d||typeof d!=='object') return b;
+  for(const k of ['shops','meals','rejects','wishLog']) if(Array.isArray(d[k])) b[k]=d[k];
+  if(d.session&&typeof d.session==='object') b.session=d.session;
+  if(d.settings&&typeof d.settings==='object'){ b.settings.baseMins=+d.settings.baseMins||30;
+    if(Array.isArray(d.settings.origins)) b.settings.origins=[String(d.settings.origins[0]||'公司'),String(d.settings.origins[1]||'')]; }
+  b.updatedAt=+d.updatedAt||0; return b; }
+
+let S = blank();
+let ui = {tab:'tonight', form:null, swapOpen:false, filter:'', arm:'', msg:'', askRemove:''};
+let store = 'loading', dbDoc = null, writing = false, dirty = false;
+
+/* ===== 存储 ===== */
+function loadLocal(){ try{ const r=localStorage.getItem(LS); if(r) S=normalize(JSON.parse(r)); }catch(e){} }
+function saveLocal(){ try{ localStorage.setItem(LS, JSON.stringify(S)); }catch(e){} }
+async function pushDb(){
+  if(!dbDoc) return;
+  if(writing){ dirty=true; return; }
+  writing=true;
+  try{ await dbDoc.set({json:JSON.stringify(S), updatedAt:S.updatedAt}); if(store==='error'){store='cloud';} }
+  catch(e){ store='error'; }
+  writing=false;
+  if(dirty){ dirty=false; pushDb(); }
+}
+function save(){
+  S.updatedAt=Date.now();
+  const cut=fmt(new Date(Date.now()-90*864e5));
+  S.rejects=S.rejects.filter(r=>r.date>=cut);
+  S.wishLog=S.wishLog.filter(d=>d>=cut);
+  if(S.meals.length>900) S.meals=S.meals.slice(-900);
+  saveLocal(); pushDb(); render();
+}
+async function initDb(){
+  try{
+    if(!window.claude||!window.claude.use){ store='local'; render(); return; }
+    const [db,user]=await Promise.all([window.claude.use('db'), window.claude.use('user')]);
+    const id=user ? await user.id() : null;
+    if(!db||!id){ store='local'; render(); return; }
+    dbDoc=db.doc('data/users/'+id+'/main');
+    const timer=setTimeout(()=>{ if(store==='loading'){ store='slow'; render(); } },10000);
+    const snap=await dbDoc.get(); clearTimeout(timer);
+    if(snap.exists){
+      const d=snap.data(); let remote=null;
+      try{ remote=normalize(JSON.parse(d.json)); }catch(e){}
+      if(remote && (remote.updatedAt>=S.updatedAt || !S.shops.length)){ S=remote; saveLocal(); }
+      else { store='cloud'; pushDb(); }
+    } else if(S.shops.length){ store='cloud'; pushDb(); }
+    store='cloud'; render();
+  }catch(e){ store='local'; render(); }
+}
+
+/* ===== 当晚会话 ===== */
+function session(){
+  const d=eveDate();
+  if(!S.session||S.session.date!==d){
+    S.session={date:d, tired:null, taste:null, weather:null, origin:0, cat:'', started:false, cur:null, none:null,
+      swaps:0, rejected:[], limits:{maxMins:null,maxPrice:null,exCats:[],noHeavy:false,noQueue:false}, mealId:null, widen:false};
+  }
+  return S.session;
+}
+const shopById = id => S.shops.find(s=>s.id===id);
+const travel = (s,se) => { const v = se.origin===1 ? s.mins2 : s.mins; return (v===null||v===undefined||v==='') ? null : +v; };
+function budget(se){
+  if(se.widen) return Infinity;
+  if(se.tired===2) return CFG.tiredMins;
+  const w=weekday(se.date);
+  if(w===5||w===6||w===0) return Math.max(CFG.weekendMins, S.settings.baseMins);
+  return S.settings.baseMins;
+}
+function openLeft(s,t){
+  if((s.rest||[]).includes(weekday(eveDate()))) return -1;
+  const o=hm(s.open), c0=hm(s.close);
+  if(o===null||c0===null) return 999;
+  const c = c0<=o ? c0+1440 : c0;
+  const arr=nowMin()+t;
+  if(arr<o-20||arr>=c) return -1;
+  return c-Math.max(arr,o);
+}
+function pool(se,opt){
+  const out=[], why={closed:0,far:0,rejected:0,limited:0}, b=budget(se), L=se.limits;
+  for(const s of S.shops){
+    if((s.status==='wish')!==!!opt.wish) continue;
+    if(se.cat && s.cat!==se.cat) continue;
+    if(se.rejected.includes(s.id)){ why.rejected++; continue; }
+    const t=travel(s,se);
+    if(openLeft(s,t||0)<CFG.minOpenLeft){ why.closed++; continue; }
+    if(t!==null && t>b){ why.far++; continue; }
+    if(opt.limits!==false){
+      if((L.maxMins!==null && (t===null||t>=L.maxMins)) || (L.maxPrice!==null && !(+s.price<L.maxPrice)) ||
+         L.exCats.includes(s.cat) || (L.noHeavy&&s.taste==='heavy') || (L.noQueue&&s.queue)){ why.limited++; continue; }
+    }
+    out.push(s);
+  }
+  return {out,why};
+}
+function score(s,se){
+  const C=CFG, notes=[], today=se.date;
+  const ms=S.meals.filter(m=>m.shopId===s.id), rated=ms.filter(m=>m.rating);
+  let like=+s.like||3;
+  if(rated.length) like=like*(1-C.histWeight)+(rated.reduce((a,m)=>a+m.rating,0)/rated.length)*C.histWeight;
+  const nopes=S.rejects.filter(r=>r.shopId===s.id&&r.reason==='nope'&&dayDiff(r.date,today)<=30).length;
+  let x=like*Math.max(1-C.nopeMax, 1-C.nopeStep*nopes);
+  const last=ms.reduce((a,m)=>m.date>a?m.date:a,'');
+  if(last){ const d=dayDiff(last,today); x*= d<7 ? 0.15+0.3*d/7 : d<14 ? 0.45+0.55*(d-7)/7 : 1; }
+  const catLast=S.meals.filter(m=>m.cat===s.cat).reduce((a,m)=>m.date>a?m.date:a,'');
+  if(catLast){ const d=dayDiff(catLast,today);
+    if(d<=C.catCoolDays) x*=C.catCool; else if(d>=5) notes.push([3, d+' 天没吃'+s.cat+'了']); }
+  if(se.taste && se.taste!=='any'){
+    if(s.taste===se.taste){ x*=C.tasteMatch; notes.push([4,'合你今天想吃的'+TASTES[s.taste]]); }
+    else if(s.taste!=='mid') x*=C.tasteClash;
+  }
+  if((se.weather==='cold'||se.weather==='rain') && s.temp==='hot'){ x*=C.coldHot; notes.push([3, se.weather==='rain'?'下雨天吃点热乎的':'今天冷，吃点热乎的']); }
+  if(se.weather==='hot' && s.temp==='cool'){ x*=C.hotCool; notes.push([3,'天热，吃点清爽的']); }
+  const t=travel(s,se);
+  if(se.weather==='rain' && (s.mode==='walk'||s.mode==='bike') && t!==null && t>C.rainFootMins) x*=C.rainOnFoot;
+  if(se.tired===2){
+    if(t!==null){ x*=1.3-0.5*Math.min(1,t/C.tiredMins); if(t<=10) notes.push([5,'路上只要 '+t+' 分钟']); }
+    if(!s.queue){ x*=C.noQueueTired; notes.push([2,'不用排队']); }
+  } else if(se.tired===1 && s.queue) x*=C.queueABitTired;
+  const last3=[...S.meals].sort((a,b)=>a.date<b.date?1:-1).slice(0,3);
+  if(last3.length===3 && last3.every(m=>m.taste==='heavy') && s.taste==='light'){ x*=C.heavyStreakLight; notes.push([4,'最近三顿都偏重口，换点清淡的']); }
+  if(!notes.length) notes.push([0, like>=4.5 ? '你一直很喜欢这家' : '你的常去店之一']);
+  notes.sort((a,b)=>b[0]-a[0]);
+  return {x, reason:notes.slice(0,2).map(n=>n[1]).join('，')};
+}
+function weighted(pairs){
+  const sum=pairs.reduce((a,p)=>a+p[1],0); let r=Math.random()*sum;
+  for(const p of pairs){ r-=p[1]; if(r<=0) return p[0]; }
+  return pairs[pairs.length-1][0];
+}
+function decide(){
+  const se=session(); se.none=null; ui.swapOpen=false;
+  if(se.swaps===0 && !se.cur){
+    const mon=mondayOf(se.date), used=S.wishLog.filter(d=>mondayOf(d)===mon).length;
+    if(used<CFG.wishPerWeek && Math.random()<CFG.wishChance){
+      const w=pool(se,{wish:true}).out;
+      if(w.length){ const pick=weighted(w.map(s=>[s,+s.like||3])); S.wishLog.push(se.date);
+        se.cur={id:pick.id, reason:'想去清单里的店，今晚去试试', isNew:true, fallback:false}; return; }
+    }
+  }
+  let p=pool(se,{}), fallback=false;
+  if(!p.out.length && p.why.limited){ const q=pool(se,{limits:false}); if(q.out.length){ p=q; fallback=true; } }
+  if(!p.out.length){ se.cur=null; se.none=p.why; return; }
+  const sc=p.out.map(s=>({s, ...score(s,se)})).sort((a,b)=>b.x-a.x).slice(0,CFG.topN);
+  const pick = fallback ? sc[0] : weighted(sc.map(o=>[o,Math.max(o.x,0.01)]));
+  se.cur={id:pick.s.id, reason:pick.reason, isNew:false, fallback};
+}
+function swap(reason){
+  const se=session(), s=shopById(se.cur&&se.cur.id); if(!s||se.swaps>=CFG.maxSwaps) return;
+  S.rejects.push({date:se.date, shopId:s.id, reason});
+  se.rejected.push(s.id);
+  const L=se.limits, t=travel(s,se);
+  if(reason==='far' && t!==null) L.maxMins=t;
+  if(reason==='pricey' && +s.price>0) L.maxPrice=+s.price;
+  if(reason==='cat' && !L.exCats.includes(s.cat)) L.exCats.push(s.cat);
+  if(reason==='oily') L.noHeavy=true;
+  if(reason==='queue') L.noQueue=true;
+  se.swaps++; se.cur=null; decide();
+  if(!se.cur) se.cur=null;
+}
+function confirmMeal(){
+  const se=session(), s=shopById(se.cur&&se.cur.id); if(!s||se.mealId) return;
+  const m={id:uid(), date:se.date, shopId:s.id, name:s.name, cat:s.cat, taste:s.taste, rating:null, asked:false};
+  S.meals.push(m); se.mealId=m.id;
+}
+function rate(mealId,n){
+  const m=S.meals.find(x=>x.id===mealId); if(!m) return;
+  m.rating=n; m.asked=true;
+  const s=shopById(m.shopId);
+  if(s && s.status==='wish'){ if(n>=4) s.status='regular'; else if(n<=2) ui.askRemove=s.id; }
+}
+
+/* ===== 示例数据 ===== */
+function samples(){
+  const mk=(name,cat,taste,temp,price,mode,mins,mins2,open,close,queue,order,like,status)=>
+    ({id:uid(),name:'（示例）'+name,cat,taste,temp,price,mode,mins,mins2,open,close,rest:[],queue,order,like,status,sample:true});
+  return [
+    mk('牛肉拉面馆','面','mid','hot',28,'walk',6,25,'10:30','21:30',false,'牛肉面加蛋',4,'regular'),
+    mk('街角粥铺','粥','light','hot',35,'walk',9,30,'11:00','22:00',false,'皮蛋瘦肉粥、青菜',3,'regular'),
+    mk('川味小馆','川菜','heavy','hot',75,'bike',12,20,'11:00','22:00',true,'水煮鱼、干煸豆角',5,'regular'),
+    mk('回转寿司','日料','light','cool',110,'transit',25,35,'11:30','21:30',true,'三文鱼、茶碗蒸',4,'regular'),
+    mk('老街火锅','火锅','heavy','hot',130,'car',20,15,'17:00','02:00',true,'鸳鸯锅、毛肚',4,'regular'),
+    mk('轻食沙拉','轻食','light','cool',48,'walk',5,28,'10:00','20:30',false,'鸡胸肉沙拉',3,'regular'),
+    mk('烧烤摊','烧烤','heavy','hot',90,'bike',15,10,'18:00','01:00',false,'羊肉串、烤茄子',4,'regular'),
+    mk('新开的云南菜','云南菜','mid','none',95,'transit',30,30,'11:00','21:30',false,'',3,'wish')
+  ];
+}
+
+/* ===== 渲染 ===== */
+const chip = (act,val,label,on,dis) => `<button class="chip" data-a="${act}" data-v="${esc(val)}" aria-pressed="${on?'true':'false'}"${dis?' disabled':''}>${esc(label)}</button>`;
+function factLine(s,se){
+  const t=travel(s,se);
+  return `<div class="facts"><span><b>${esc(MODES[s.mode]||'')}</b> ${t===null?'路程未知':'约 '+t+' 分钟'}</span>`+
+    `<span>人均 <b>${+s.price>0?'¥'+(+s.price):'未填'}</b></span><span>${esc(s.cat||'')} · ${esc(TASTES[s.taste]||'')}</span>${s.queue?'<span>常排队</span>':''}</div>`;
+}
+function viewTonight(){
+  const se=session(), d=se.date; let h='';
+  h+=`<div class="head"><p class="sub">${+d.slice(5,7)} 月 ${+d.slice(8)} 日 ${WD[weekday(d)]}</p><h1>今晚吃哪家</h1></div>`;
+  if(ui.askRemove){ const s=shopById(ui.askRemove);
+    if(s) h+=`<div class="card"><p>${esc(s.name)} 的评分较低，要从想去清单里移除吗？</p><div class="row"><button class="btn small danger" data-a="rm-yes">移除</button><button class="btn small" data-a="rm-no">保留</button></div></div>`; }
+  const pend=S.meals.filter(m=>!m.rating&&!m.asked&&m.date<d).slice(-2);
+  for(const m of pend){
+    h+=`<div class="card"><p>${+m.date.slice(5,7)} 月 ${+m.date.slice(8)} 日吃的 <b>${esc(m.name)}</b>，打几分？</p><div class="row" style="align-items:center"><div class="stars">`+
+      [1,2,3,4,5].map(n=>`<button data-a="rate" data-v="${m.id}:${n}" aria-label="${n} 分">${n}</button>`).join('')+
+      `</div><button class="btn small" data-a="skip-rate" data-v="${m.id}" style="flex:none">跳过</button></div></div>`;
+  }
+  if(!S.shops.length){
+    h+=`<div class="card"><p>店库还是空的。先添加几家你常去的店，或者载入示例数据看看效果。</p><div class="row"><button class="btn primary" data-a="new-shop">添加第一家店</button><button class="btn" data-a="load-samples">载入示例数据</button></div></div>`;
+    return h;
+  }
+  if(se.mealId){
+    const m=S.meals.find(x=>x.id===se.mealId), s=m&&shopById(m.shopId);
+    h+=`<div class="ticket"><div class="top"><span class="stamp">今晚定了</span><div class="name">${esc(m?m.name:'')}</div>${s?factLine(s,se):''}</div>`+
+       `<div class="bottom">${s&&s.order?`<div class="kv"><span>点单</span><span>${esc(s.order)}</span></div>`:''}<p class="note">已记入历史。明天打开时会请你打分。</p></div></div>`+
+       `<button class="btn small" data-a="undo-meal">点错了，撤销</button>`;
+    return h;
+  }
+  if(!se.started){
+    const cats=[...new Set(S.shops.map(s=>s.cat).filter(Boolean))];
+    const two=S.settings.origins[1] && S.shops.some(s=>s.mins2!==null&&s.mins2!==undefined&&s.mins2!=='');
+    h+=`<div class="group"><h2>今天累不累</h2><div class="chips">${chip('tired',0,'不累',se.tired===0)}${chip('tired',1,'有点累',se.tired===1)}${chip('tired',2,'很累',se.tired===2)}</div></div>`;
+    h+=`<div class="group"><h2>想吃什么口味</h2><div class="chips">${chip('taste','light','清淡',se.taste==='light')}${chip('taste','any','都行',se.taste==='any')}${chip('taste','heavy','重口',se.taste==='heavy')}</div></div>`;
+    h+=`<div class="group"><h2>外面天气${se.autoW?'（已按当前 '+esc(se.autoW)+' 自动选择，可以改）':''}</h2><div class="chips">${chip('weather','cold','冷',se.weather==='cold')}${chip('weather','mild','舒服',se.weather==='mild')}${chip('weather','hot','热',se.weather==='hot')}${chip('weather','rain','下雨',se.weather==='rain')}</div></div>`;
+    if(two) h+=`<div class="group"><h2>从哪出发</h2><div class="chips">${chip('origin',0,S.settings.origins[0],se.origin===0)}${chip('origin',1,S.settings.origins[1],se.origin===1)}</div></div>`;
+    if(cats.length>1) h+=`<div class="group"><h2>今天就想吃（可不选）</h2><div class="chips">${cats.map(c=>chip('cat',c,c,se.cat===c)).join('')}</div></div>`;
+    h+=`<button class="btn primary" data-a="decide">帮我决定</button><p class="note">上面的问题都可以跳过。每晚最多换 ${CFG.maxSwaps} 次。</p>`;
+    return h;
+  }
+  const s=shopById(se.cur&&se.cur.id);
+  if(!s){
+    const w=se.none||{closed:0,far:0,rejected:0,limited:0}, parts=[];
+    if(w.closed) parts.push(w.closed+' 家今晚不营业或快打烊');
+    if(w.far) parts.push(w.far+' 家超过今天的路程上限');
+    if(w.rejected) parts.push(w.rejected+' 家今晚已被你换掉');
+    h+=`<div class="card"><p><b>现在没有可以推荐的店。</b></p><p class="note">${parts.length?esc(parts.join('，'))+'。':(se.cat?'店库里没有可选的'+esc(se.cat)+'店。':'店库里没有符合条件的常去店。')}</p><div class="row">`+
+       (w.far&&!se.widen?`<button class="btn" data-a="widen">放宽路程上限</button>`:'')+
+       (se.cat?`<button class="btn" data-a="clear-cat">不限类型</button>`:'')+
+       `<button class="btn" data-a="go" data-v="shops">去店库看看</button></div></div>`;
+    return h;
+  }
+  const left=CFG.maxSwaps-se.swaps, final=left<=0;
+  h+=`<div class="ticket"><div class="top">`+
+     (final?`<span class="stamp">今晚最终决定</span>`:se.cur.isNew?`<span class="stamp">试试新店</span>`:se.cur.fallback?`<span class="stamp calm">没有完全符合的，这是最接近的</span>`:`<span class="stamp calm">去这家</span>`)+
+     `<div class="name">${esc(s.name)}</div>${factLine(s,se)}</div><div class="bottom">`+
+     (s.order?`<div class="kv"><span>点单</span><span>${esc(s.order)}</span></div>`:'')+
+     `<div class="kv"><span>理由</span><span>${esc(se.cur.reason)}</span></div></div></div>`;
+  h+=`<div class="row"><button class="btn primary" data-a="confirm">就它了</button>`+(final?'':`<button class="btn" data-a="swap-open">换一个（还剩 ${left} 次）</button>`)+`</div>`;
+  if(ui.swapOpen && !final){
+    const t=travel(s,se);
+    h+=`<div class="group"><h2>为什么不想去这家</h2><div class="chips">`+
+       chip('swap','far','太远',false,t===null)+chip('swap','pricey','太贵',false,!(+s.price>0))+chip('swap','cat','刚吃过这类',false)+
+       chip('swap','oily','太油腻',false)+(s.queue?chip('swap','queue','不想排队',false):'')+chip('swap','nope','就是不想吃',false)+`</div></div>`;
+  }
+  return h;
+}
+function shopMeta(s){
+  const a=[s.cat, (MODES[s.mode]||'')+(s.mins!==null&&s.mins!==undefined&&s.mins!==''?' '+s.mins+' 分钟':''), +s.price>0?'¥'+(+s.price):'' , '喜好 '+(s.like||3)].filter(Boolean);
+  return a.join(' · ');
+}
+function viewShops(){
+  if(ui.form) return viewForm();
+  const cats=[...new Set(S.shops.map(s=>s.cat).filter(Boolean))];
+  const list=S.shops.filter(s=>!ui.filter||s.cat===ui.filter);
+  let h=`<div class="head"><h1>店库</h1><p class="sub">${S.shops.filter(s=>s.status!=='wish').length} 家常去，${S.shops.filter(s=>s.status==='wish').length} 家想去</p></div>`;
+  h+=`<button class="btn primary" data-a="new-shop">添加店铺</button>`;
+  if(cats.length>1) h+=`<div class="chips">${chip('filter','','全部',!ui.filter)}${cats.map(c=>chip('filter',c,c,ui.filter===c)).join('')}</div>`;
+  h+=`<div class="list">`+list.map(s=>`<button class="item" data-a="edit-shop" data-v="${s.id}"><span class="grow"><span class="t">${esc(s.name)}</span><span class="m">${esc(shopMeta(s))}</span></span>${s.status==='wish'?'<span class="pill wish">想去</span>':''}</button>`).join('')+`</div>`;
+  if(!S.shops.length) h+=`<p class="note">还没有店铺。</p>`;
+  if(S.shops.some(s=>s.sample)) h+=`<button class="btn small danger" data-a="rm-samples">${ui.arm==='samples'?'再点一次，删除全部示例店铺':'删除示例店铺'}</button>`;
+  return h;
+}
+function viewForm(){
+  const f=ui.form, o=S.settings.origins;
+  const sel=(id,map,val)=>`<select id="${id}">${Object.entries(map).map(([k,v])=>`<option value="${k}"${k===String(val)?' selected':''}>${esc(v)}</option>`).join('')}</select>`;
+  const cats=[...new Set(S.shops.map(s=>s.cat).filter(Boolean))];
+  return `<div class="head"><h1>${f.isNew?'添加店铺':'编辑店铺'}</h1></div><form id="shop-form">
+  <label>店名<input id="f-name" value="${esc(f.name)}" autocomplete="off"></label>
+  <div class="two"><label>类型<input id="f-cat" list="cat-list" value="${esc(f.cat)}" placeholder="如 面、火锅" autocomplete="off"><datalist id="cat-list">${cats.map(c=>`<option value="${esc(c)}">`).join('')}</datalist></label>
+  <label>人均（元）<input id="f-price" type="number" inputmode="numeric" min="0" value="${esc(f.price)}"></label></div>
+  <div class="two"><label>口味${sel('f-taste',TASTES,f.taste)}</label><label>冷热${sel('f-temp',TEMPS,f.temp)}</label></div>
+  <label>怎么去${sel('f-mode',MODES,f.mode)}</label>
+  <div class="two"><label>从${esc(o[0])}出发（分钟）<input id="f-mins" type="number" inputmode="numeric" min="0" value="${esc(f.mins)}"></label>
+  ${o[1]?`<label>从${esc(o[1])}出发（可不填）<input id="f-mins2" type="number" inputmode="numeric" min="0" value="${esc(f.mins2)}"></label>`:''}</div>
+  <div class="two"><label>开门<input id="f-open" type="time" value="${esc(f.open)}"></label><label>打烊<input id="f-close" type="time" value="${esc(f.close)}"></label></div>
+  <div class="group"><span class="note">每周休息日</span><div class="days">${[1,2,3,4,5,6,0].map(d=>`<label class="check"><input type="checkbox" id="f-rest-${d}"${(f.rest||[]).includes(d)?' checked':''}>${WD[d]}</label>`).join('')}</div></div>
+  <label class="check"><input type="checkbox" id="f-queue"${f.queue?' checked':''}>经常要排队</label>
+  <label>我的固定点单<input id="f-order" value="${esc(f.order)}" placeholder="到店就点这个" autocomplete="off"></label>
+  <div class="two"><label>喜欢程度${sel('f-like',{1:'1 一般',2:'2',3:'3 还行',4:'4',5:'5 很喜欢'},f.like)}</label><label>状态${sel('f-status',{regular:'常去',wish:'想去（还没去过）'},f.status)}</label></div>
+  ${ui.msg?`<p class="err">${esc(ui.msg)}</p>`:''}
+  <div class="row"><button type="button" class="btn primary" data-a="save-shop">保存</button><button type="button" class="btn" data-a="cancel-form">取消</button></div>
+  ${f.isNew?'':`<button type="button" class="btn small danger" data-a="del-shop">${ui.arm==='del'?'再点一次，确认删除':'删除这家店'}</button>`}
+  </form>`;
+}
+function viewHistory(){
+  const ms=[...S.meals].sort((a,b)=>a.date<b.date?1:-1);
+  let h=`<div class="head"><h1>历史</h1><p class="sub">共 ${ms.length} 顿</p></div>`;
+  if(!ms.length) return h+`<p class="note">还没有记录。在今晚页点"就它了"后会出现在这里。</p>`;
+  h+=`<div class="list">`+ms.map(m=>`<div class="item"><span class="grow"><span class="t">${esc(m.name)}</span><span class="m">${esc(m.date)} ${WD[weekday(m.date)]} · ${esc(m.cat||'')}</span></span><span class="stars">`+
+     [1,2,3,4,5].map(n=>`<button data-a="rate" data-v="${m.id}:${n}" aria-pressed="${m.rating===n?'true':'false'}" aria-label="${n} 分">${n}</button>`).join('')+`</span></div>`).join('')+`</div>`;
+  return h;
+}
+function viewPrefs(){
+  const st={loading:'正在连接云端存储…',slow:'云端存储暂时连不上，当前改动先存在本浏览器。',cloud:'数据已保存到你的账号，换设备打开也在。',local:'数据只保存在本浏览器，清除浏览器数据会丢失，建议定期导出。',error:'云端保存失败，数据暂存在本浏览器。建议导出备份。'}[store];
+  return `<div class="head"><h1>设置</h1></div>
+  <div class="card"><label>平时路上最多花多久（分钟）<input id="s-base" type="number" inputmode="numeric" min="5" value="${esc(S.settings.baseMins)}"></label>
+  <p class="note">周五和周末放宽到 ${CFG.weekendMins} 分钟，很累时收紧到 ${CFG.tiredMins} 分钟。</p>
+  <div class="two"><label>出发点一<input id="s-o1" value="${esc(S.settings.origins[0])}"></label><label>出发点二（可留空）<input id="s-o2" value="${esc(S.settings.origins[1])}"></label></div>
+  <button class="btn small" data-a="save-prefs">保存设置</button></div>
+  <div class="card"><h2>数据</h2><p class="note ${store==='cloud'?'ok':''}">${st}</p>
+  <label>备份内容<textarea id="s-json" spellcheck="false" placeholder="点导出后，这里会出现全部数据；要导入时把备份粘贴到这里。"></textarea></label>
+  <div class="row"><button class="btn small" data-a="export">导出并复制</button><button class="btn small danger" data-a="import">${ui.arm==='import'?'再点一次，用它替换全部数据':'导入（替换现有数据）'}</button></div>
+  ${ui.msg?`<p class="note">${esc(ui.msg)}</p>`:''}</div>`;
+}
+function render(){
+  const v={tonight:viewTonight,shops:viewShops,history:viewHistory,prefs:viewPrefs}[ui.tab]||viewTonight;
+  const main=document.getElementById('main'); main.innerHTML=v();
+  document.getElementById('nav').innerHTML=[['tonight','今晚'],['shops','店库'],['history','历史'],['prefs','设置']]
+    .map(([k,l])=>`<button data-a="go" data-v="${k}"${ui.tab===k?' aria-current="page"':''}>${l}</button>`).join('');
+}
+function go(tab){ ui.tab=tab; ui.form=null; ui.arm=''; ui.msg=''; ui.swapOpen=false;
+  try{ if(location.hash!=='#'+tab) location.hash=tab; }catch(e){} render(); document.getElementById('main').scrollTop=0; }
+
+/* ===== 事件 ===== */
+const val = id => { const e=document.getElementById(id); return e ? e.value.trim() : ''; };
+const numOrNull = id => { const v=val(id); return v==='' ? null : Math.max(0,Math.round(+v)||0); };
+const ACT = {
+  go: v => go(v),
+  tired: v => { const se=session(); se.tired = se.tired===+v ? null : +v; save(); },
+  taste: v => { const se=session(); se.taste = se.taste===v ? null : v; save(); },
+  weather: v => { const se=session(); se.weather = se.weather===v ? null : v; save(); },
+  origin: v => { session().origin=+v; save(); },
+  cat: v => { const se=session(); se.cat = se.cat===v ? '' : v; save(); },
+  decide: () => { const se=session(); se.started=true; decide(); save(); },
+  'swap-open': () => { ui.swapOpen=!ui.swapOpen; render(); },
+  swap: v => { swap(v); save(); },
+  confirm: () => { confirmMeal(); save(); },
+  'undo-meal': () => { const se=session(); S.meals=S.meals.filter(m=>m.id!==se.mealId); se.mealId=null; save(); },
+  widen: () => { const se=session(); se.widen=true; decide(); save(); },
+  'clear-cat': () => { const se=session(); se.cat=''; decide(); save(); },
+  rate: v => { const [id,n]=v.split(':'); rate(id,+n); save(); },
+  'skip-rate': v => { const m=S.meals.find(x=>x.id===v); if(m) m.asked=true; save(); },
+  'rm-yes': () => { S.shops=S.shops.filter(s=>s.id!==ui.askRemove); ui.askRemove=''; save(); },
+  'rm-no': () => { ui.askRemove=''; render(); },
+  'load-samples': () => { S.shops.push(...samples()); save(); },
+  'rm-samples': () => { if(ui.arm!=='samples'){ ui.arm='samples'; render(); return; } S.shops=S.shops.filter(s=>!s.sample); ui.arm=''; save(); },
+  filter: v => { ui.filter=v; render(); },
+  'new-shop': () => { ui.tab='shops'; ui.msg=''; ui.arm='';
+    ui.form={isNew:true,id:uid(),name:'',cat:'',taste:'mid',temp:'none',price:'',mode:'walk',mins:'',mins2:'',open:'11:00',close:'21:30',rest:[],queue:false,order:'',like:3,status:'regular'}; render(); document.getElementById('main').scrollTop=0; },
+  'edit-shop': v => { const s=shopById(v); if(!s) return; ui.msg=''; ui.arm='';
+    ui.form={...s,isNew:false,price:s.price??'',mins:s.mins??'',mins2:s.mins2??'',rest:[...(s.rest||[])]}; render(); document.getElementById('main').scrollTop=0; },
+  'cancel-form': () => { ui.form=null; ui.msg=''; ui.arm=''; render(); },
+  'save-shop': () => {
+    const f=ui.form, name=val('f-name');
+    if(!name){ ui.msg='请填写店名。'; Object.assign(f,readForm()); render(); return; }
+    const s={...readForm(), id:f.id}; if(f.sample) s.sample=true;
+    const i=S.shops.findIndex(x=>x.id===f.id); if(i>=0) S.shops[i]=s; else S.shops.push(s);
+    ui.form=null; ui.msg=''; save();
+  },
+  'del-shop': () => { if(ui.arm!=='del'){ Object.assign(ui.form,readForm()); ui.arm='del'; render(); return; }
+    S.shops=S.shops.filter(s=>s.id!==ui.form.id); ui.form=null; ui.arm=''; save(); },
+  'save-prefs': () => { S.settings.baseMins=Math.max(5,Math.round(+val('s-base'))||30);
+    S.settings.origins=[val('s-o1')||'公司', val('s-o2')]; ui.msg='设置已保存。'; save(); },
+  export: () => { const {session:_s, ...rest}=S; const txt=JSON.stringify(rest); const ta=document.getElementById('s-json'); ta.value=txt; ta.select();
+    const done=ok=>{ ui.msg= ok?'已复制到剪贴板，粘贴到备忘录或文件里保存。':'备份内容已填入上面的文本框，请手动全选复制。'; const keep=txt; render(); document.getElementById('s-json').value=keep; };
+    try{ navigator.clipboard.writeText(txt).then(()=>done(true),()=>done(false)); }catch(e){ done(false); } },
+  import: () => { const txt=val('s-json'); let d=null;
+    try{ d=JSON.parse(txt); }catch(e){}
+    if(!d||!Array.isArray(d.shops)||!d.shops.every(s=>s&&typeof s.id==='string'&&typeof s.name==='string')){
+      ui.arm=''; ui.msg='导入失败：文本框里的内容不是有效的备份，现有数据没有改动。'; render(); document.getElementById('s-json').value=txt; return; }
+    if(ui.arm!=='import'){ ui.arm='import'; ui.msg='备份里有 '+d.shops.length+' 家店、'+((d.meals||[]).length)+' 条用餐记录。确认后会替换现有全部数据。'; render(); document.getElementById('s-json').value=txt; return; }
+    S=normalize(d); ui.arm=''; ui.msg='导入完成。'; save(); }
+};
+function readForm(){
+  return {name:val('f-name'), cat:val('f-cat')||'其他', taste:val('f-taste'), temp:val('f-temp'), price:numOrNull('f-price')??'',
+    mode:val('f-mode'), mins:numOrNull('f-mins'), mins2:document.getElementById('f-mins2')?numOrNull('f-mins2'):(ui.form.mins2===''?null:ui.form.mins2),
+    open:val('f-open'), close:val('f-close'), rest:[0,1,2,3,4,5,6].filter(d=>document.getElementById('f-rest-'+d).checked),
+    queue:document.getElementById('f-queue').checked, order:val('f-order'), like:+val('f-like')||3, status:val('f-status')};
+}
+document.addEventListener('click', e => {
+  const b=e.target.closest('[data-a]'); if(!b||b.disabled) return;
+  const a=b.dataset.a; if(a!=='rm-samples'&&a!=='del-shop'&&a!=='import'&&a!=='export') { if(ui.arm&&a!=='go') ui.arm=''; }
+  if(a!=='save-shop'&&a!=='export'&&a!=='import'&&a!=='save-prefs'&&a!=='del-shop') ui.msg='';
+  if(ACT[a]) ACT[a](b.dataset.v);
+});
+document.addEventListener('submit', e => e.preventDefault());
+window.addEventListener('hashchange', () => { const t=location.hash.slice(1); if(['tonight','shops','history','prefs'].includes(t)&&t!==ui.tab) go(t); });
+
+/* ===== 自动天气和离线（仅在 HTTPS 网址下生效，失败时静默跳过） ===== */
+function autoWeather(){
+  const se0=session();
+  if(se0.weather||se0.started||se0.autoW||!navigator.geolocation||location.protocol!=='https:') return;
+  try{ navigator.geolocation.getCurrentPosition(async pos=>{
+    try{
+      const la=pos.coords.latitude.toFixed(1), lo=pos.coords.longitude.toFixed(1);
+      const ctl=new AbortController(); setTimeout(()=>ctl.abort(),6000);
+      const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude='+la+'&longitude='+lo+'&current=temperature_2m,precipitation',{signal:ctl.signal});
+      const j=await r.json(), t=j.current.temperature_2m, p=j.current.precipitation;
+      const se=session(); if(se.weather||se.started||typeof t!=='number') return;
+      se.weather = p>0.1 ? 'rain' : t<15 ? 'cold' : t>28 ? 'hot' : 'mild';
+      se.autoW=Math.round(t)+'℃'+(p>0.1?'、有雨':''); saveLocal(); render();
+    }catch(e){}
+  },()=>{}, {maximumAge:3600e3, timeout:8000}); }catch(e){}
+}
+if('serviceWorker' in navigator && location.protocol==='https:'){ try{ navigator.serviceWorker.register('sw.js').catch(()=>{}); }catch(e){} }
+try{ if(navigator.storage&&navigator.storage.persist) navigator.storage.persist().catch(()=>{}); }catch(e){}
+
+loadLocal();
+{ const t=location.hash.slice(1); if(['tonight','shops','history','prefs'].includes(t)) ui.tab=t; }
+render();
+initDb();
+autoWeather();
+</script>
+</body>
+</html>
